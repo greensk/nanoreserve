@@ -4,8 +4,10 @@ import simplejson
 import sys
 import time
 import os
+import subprocess
+import shutil
 
-defaultConfig = {"input" : {}, "output" : "", "options" : {"tempDir" : "/tmp", "arch" : "gzip", "tempPrefix" : "nanoreserve"}}
+defaultConfig = {"input" : {}, "output" : [], "options" : {"tempDir" : "/tmp", "arch" : "gzip", "tempPrefix" : "nanoreserve"}}
 
 if len(sys.argv) == 1:
 	configFile = '/etc/nanoreserve.json'
@@ -27,20 +29,19 @@ for iId in config['input']:
 	item = config['input'][iId]
 	
 	if item['type'] == 'fs':
-		# :TODO: fs dump command
-		pass
+		outfile = '%s/%s.tar' % (tmp, iId)
+		subprocess.call(['tar', '-czvvf', outfile, item['path']])
+		files.append(outfile)
 	else:
 		print 'Error: unknown type %s' % item['type']
 	
-for oId in config['output']:
-	
-	print 'output ' + oId + ':'
-	item = config['output'][oId]
+for item in config['output']:
 	
 	if item['type'] == 'fs':
-		# :TODO: fs copy command
-		pass
+		print 'output ' + item['path'] + ':'
+		for f in files:
+			shutil.copy(f, item['path'])
 	else:
 		print 'Error: unknown type %s' % item['type']
 
-os.removedirs(tmp)
+shutil.rmtree(tmp)
