@@ -1,5 +1,9 @@
 #!/usr/bin/python
 # * coding: utf8 *
+# :TODO: archivation
+# :TODO: exception handling
+# :TODO: email output
+# :TODO: ssh output
 import simplejson
 import sys
 import time
@@ -31,6 +35,21 @@ for iId in config['input']:
 	if item['type'] == 'fs':
 		outfile = '%s/%s.tar' % (tmp, iId)
 		subprocess.call(['tar', '-czvvf', outfile, item['path']])
+		files.append(outfile)
+	elif item['type'] == 'mysql':
+		outfile = '%s/%s.sql' % (tmp, iId)
+		args = ['mysqldump']
+		if 'host' in item:
+			args += ['-h', item['host']]
+		if 'user' in item:
+			args += ['-u', item['user']]
+		if 'password' in item:
+			args += ['--password=%s' % item['password']]
+		if 'database' in item:
+			args += [item['database']]
+			
+		f = open(outfile, 'w')
+		subprocess.call(args, stdout=f)
 		files.append(outfile)
 	else:
 		print 'Error: unknown type %s' % item['type']
