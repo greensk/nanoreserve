@@ -34,10 +34,10 @@ for iId in config['input']:
 	
 	if item['type'] == 'fs':
 		outfile = '%s/%s.tar' % (tmp, iId)
-		subprocess.call(['tar', '-czvvf', outfile, item['path']])
-		files.append(outfile)
+		pdump  = subprocess.Popen(['tar', '-cOvvf', '-', item['path']], stdout=subprocess.PIPE)
+		
 	elif item['type'] == 'mysql':
-		outfile = '%s/%s.sql.%s' % (tmp, iId, config['options']['archSuffix'])
+		outfile = '%s/%s.sql' % (tmp, iId)
 		args = ['mysqldump']
 		if 'host' in item:
 			args += ['-h', item['host']]
@@ -48,15 +48,18 @@ for iId in config['input']:
 		if 'database' in item:
 			args += [item['database']]
 			
-		f = open(outfile, 'w')
 		pdump  = subprocess.Popen(args, stdout=subprocess.PIPE)
-		parch = subprocess.Popen(config['options']['arch'], stdin=pdump.stdout, stdout=f)
-		pdump.stdout.close()
-		parch.communicate()
 		
-		files.append(outfile)
 	else:
 		print 'Error: unknown type %s' % item['type']
+		continue
+		
+	outfile += '.' + config['options']['archSuffix']
+	f = open(outfile, 'w')
+	parch = subprocess.Popen(config['options']['arch'], stdin=pdump.stdout, stdout=f)
+	pdump.stdout.close()
+	parch.communicate()
+	files.append(outfile)
 	
 for item in config['output']:
 	
