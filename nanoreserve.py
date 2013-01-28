@@ -10,6 +10,8 @@ import time
 import os
 import subprocess
 import shutil
+import email
+import smtplib
 
 defaultConfig = {"input" : {}, "output" : [], "options" : {"tempDir" : "/tmp", "arch" : "gzip", "archSuffix" : "gz", "tempPrefix" : "nanoreserve"}}
 
@@ -67,6 +69,26 @@ for item in config['output']:
 		print 'output ' + item['path'] + ':'
 		for f in files:
 			shutil.copy(f, item['path'])
+	elif item['type'] == 'email':
+		msg = email.MIMEMultipart.MIMEMultipart()
+		msg['Subject'] = item['subject'] 
+		msg['From'] = item['from']
+		msg['To'] = ', '.join(item['to'])
+		
+		for f in files:
+			part = email.MIMEBase.MIMEBase('application', "octet-stream")
+			part.set_payload(open(f, "rb").read())
+			email.Encoders.encode_base64(part)
+
+			part.add_header('Content-Disposition', 'attachment; filename="%s"' % (os.path.basename(f)))
+			msg.attach(part)
+			
+		server = smtplib.SMTP(item['smtp']['host'], item['smtp']['port'])
+		if ('login' in item['smtp']):
+			server.login(item['smtp']['login'], item['smtp']['password'])
+		server.sendmail(item['from'], item['to'], msg.as_string())
+		server.quit()
+
 	else:
 		print 'Error: unknown type %s' % item['type']
 
