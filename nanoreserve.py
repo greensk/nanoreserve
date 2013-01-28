@@ -11,7 +11,7 @@ import os
 import subprocess
 import shutil
 
-defaultConfig = {"input" : {}, "output" : [], "options" : {"tempDir" : "/tmp", "arch" : "gzip", "tempPrefix" : "nanoreserve"}}
+defaultConfig = {"input" : {}, "output" : [], "options" : {"tempDir" : "/tmp", "arch" : "gzip", "archSuffix" : "gz", "tempPrefix" : "nanoreserve"}}
 
 if len(sys.argv) == 1:
 	configFile = '/etc/nanoreserve.json'
@@ -37,7 +37,7 @@ for iId in config['input']:
 		subprocess.call(['tar', '-czvvf', outfile, item['path']])
 		files.append(outfile)
 	elif item['type'] == 'mysql':
-		outfile = '%s/%s.sql' % (tmp, iId)
+		outfile = '%s/%s.sql.%s' % (tmp, iId, config['options']['archSuffix'])
 		args = ['mysqldump']
 		if 'host' in item:
 			args += ['-h', item['host']]
@@ -49,7 +49,11 @@ for iId in config['input']:
 			args += [item['database']]
 			
 		f = open(outfile, 'w')
-		subprocess.call(args, stdout=f)
+		pdump  = subprocess.Popen(args, stdout=subprocess.PIPE)
+		parch = subprocess.Popen(config['options']['arch'], stdin=pdump.stdout, stdout=f)
+		pdump.stdout.close()
+		parch.communicate()
+		
 		files.append(outfile)
 	else:
 		print 'Error: unknown type %s' % item['type']
